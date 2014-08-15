@@ -7,7 +7,11 @@ module.exports=Common;
  * 返回就有的状态 和计时秒数
  */
 Common.Calculation = function(lists){
-	var lists = JSON.parse(lists);//conver 
+	try{
+		var lists = JSON.parse(lists);//conver 
+	} catch(err){
+		return null;
+	}	
 	//获取当前的时间
 	var now  = new Date().getTime();
 	for(var date in lists){

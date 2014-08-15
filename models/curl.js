@@ -64,53 +64,59 @@ Curl.Start = function(cron,n){
 }
 //
 Curl.SendCompCron = function(cron){
-	//comp_id,cmc_id,type
-	//sign 
 	var ans_key = Common.getSign(cron.comp_id);
 	var contents = {
 		comp_id:cron.comp_id,
 		cmc_id:cron.cmc_id,
 		type:cron.type,
 		ans_key:ans_key
-	};
-/*	console.log(contents);
-	return ;
-*/
+	},
+	 logs = {
+		cmc_id:cron.cmc_id,
+		comp_id:cron.comp_id,
+   	};
+	//send 
 	Curl.Post(Settings.remote.send_ivr,null,contents,function(res){
-			//
+			//* notices
 			res.on('data',function(data){
-				var data = JSON.parse(data);
+				//var data = JSON.parse(data);
 				console.log(data);
 			});
-/*			console.log('--|---|--');
-			return ;*/
-			// clear setTimeOut
+			//*/
 //			Crontab.Remove(cron);
 			// from mongodb
-			Compcron.GetRow({cmc_id:cron.cmc_id,status:'1'},function(error,compcron){
+			Compcron.GetRow({cmc_id:cron.cmc_id,status:'0'},function(error,compcron){
 				if(error){
-					console.log(error);
+					logs['content'] = error;
+	   				Logs.Save(logs);	
 					return ;
 				}
-				console.log(compcron);
 				if(compcron == null) {
-					console.log('date empty');
+					logs['content'] = 'data empty';
+	   				Logs.Save(logs);
+	   				CompCron.Update({cmc_id:cron.cmc_id},{status:'1'},function(err){});
+	   				//Remove crontab
+	   				Crontab.Remove(cron);
 					return;
 				};
 				var calcu = Common.Calculation(compcron.cron_time);	
-				if(calcu){
+				if(calcu == null){
+					logs['content'] = 'date empty';
+	   				Logs.Save(logs);
+	   				CompCron.Update({cmc_id:cron.cmc_id},{status:'1'},function(err){});
+	   				//Remove crontab
+	   				Crontab.Remove(cron);
+					return;
+				}else{
 					var comp_cron = {
 						cmc_id:compcron.cmc_id,
 						comp_id:compcron.comp_id,
 						type:calcu.type,
 						countdown:calcu.countdown
 					};
-//					console.log(calcu);
-//					Crontab.Insert(comp_cron,Curl.SendCompCron);
-//					console.log('----^_^!!-----');
+					Crontab.Remove(comp_cron);//delete remove
+					Crontab.Insert(comp_cron,Curl.SendCompCron);//add
 				}
-//				console.log('----ok-----');
-				return ;
 			});
 	});
 };

@@ -33,16 +33,8 @@ CompCron.Remove = function(comp_cron,callback){
 	})
 }
 //update 
-CompCron.Update = function(comp_cron,callback){
-	compCronDao.findOneAndUpdate({cmc_id: comp_cron.cmc_id},comp_cron,function(err,comp_cron){
-	callback(err,comp_cron);
-/*
-
-		if(err){
-			callback(err,comp_cron);	
-		}else{
-//			compCronDao.findByIdAndUpdate(id, { name: 'jason borne' }, options, callback);
-		}
-		callback(err);*/
+CompCron.Update = function(where,comp_cron,callback){
+	compCronDao.findOneAndUpdate({cmc_id: where.cmc_id},comp_cron,function(err,comp_cron){
+		callback(err,comp_cron);
 	});
 }

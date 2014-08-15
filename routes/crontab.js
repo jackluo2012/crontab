@@ -216,17 +216,102 @@ router.post('/test',function(req,res){
 	*/
 
 });
-router.post('/', function(req, res) {
-   var status = Login.author(req);
-   if(status != '1'){
-   		res.write({status:'-1'});//'sorry Permission denied'
+//execute
+router.post('/execute', function(req, res) {
+    //secutfiy
+    var status = Login.author(req);
+    if(status != '1'){
+   		res.write("{status:'1001'}");//'sorry Permission denied'
 	   	res.end();
-   }
-   
-   //res.write('hello world');
-   
-//   res.render('index', { title: 'Express' });
+    }
+    // add mongodb
+   	var getpost = {
+		cmc_id:req.body.cmc_id,
+		comp_id:req.body.comp_id,   		
+   	};
+   	var compcron= getpost,
+   		logs = getpost,
+   		cron = getpost,
+   		cron_time = req.body.cron_time;
+   	compcron['status'] = 1;
+   	compcron['cron_time'] = cron_time;
+   	// only once first remove
+   	CompCron.Update({cmc_id:compcron.cmc_id},compcron,function(err){
+   		if(err){
+   			logs['content'] = err;
+   			res.write("{status:'27017'}");//
+	   		res.end();
+   		}
+		Logs.Save(logs);
+   	});
+   	// add execute 
+   	compcron['status'] = 0;
+	CompCron.Save(compcron,function(error,compcron){
+		if(error){
+   			logs['content'] = error;
+   			res.write("{status:'27017'}");//
+	   		res.end();
+   		}
+		Logs.Save(logs);
+	});
+	// add Crontab
+	var calcu = Common.Calculation(cron_time);
+	if(calcu == null){
+		res.write("{status:'1002'}");//
+   		res.end();
+	   	compcron['status'] = 1;
+	   	CompCron.Update({comp_id:compcron.comp_id},compcron,function(err){});
+	   	logs['content'] = {err:'cron time is null'};
+	   	Logs.Save(logs);
+	}else{
+		cron['type'] = calcu.type;
+		cron['countdown'] = calcu.countdown; //add
+		//if you execute time 
+		if(calcu.type == 'stop'){
+			cron['type'] = 'begin';
+			Curl.SendCompCron(cron);
+		}else{
+			Crontab.Remove(cron);//delete remove
+			Crontab.Insert(cron,Curl.SendCompCron);//add 
+		}
+	}
+    res.write("{status:'1111'}");//'sorry Permission denied'
+	res.end();
 });
-
+// stop 
+router.post('/stop', function(req, res) {
+    //secutfiy
+    var status = Login.author(req);
+    if(status != '1'){
+   		res.write("{status:'1111'}");//'sorry Permission denied'
+	   	res.end();
+    }
+    // add mongodb
+   	var getpost = {
+		cmc_id:req.body.cmc_id,
+		comp_id:req.body.comp_id,   		
+   	};
+   	var compcron= getpost,
+   		logs = getpost,
+   		cron = getpost,
+   		cron_time = req.body.cron_time;
+   	compcron['status'] = 1;
+   	compcron['cron_time'] = cron_time;
+   	// only once first remove
+   	CompCron.Update({cmc_id:compcron.cmc_id},compcron,function(err){
+   		if(err){
+   			logs['content'] = err;
+   			res.write("{status:'27017'}");//'sorry Permission denied'
+	   		res.end();
+   		}
+		Logs.Save(logs);
+   	});	
+   	Crontab.Remove(getpost);//delete remove
+   	cron['type'] = 'stop';
+   	// notice php
+   	Curl.SendCompCron(cron);
+   	res.write("{status:'1111'}");//'sorry Permission denied'
+	res.end();
+});
 
 module.exports = router;
